@@ -3,5 +3,7 @@ spring:
     view:
       prefix: /
       suffix: .jsp
+  profiles:
+    active: dev
 server:
   port: 8088
