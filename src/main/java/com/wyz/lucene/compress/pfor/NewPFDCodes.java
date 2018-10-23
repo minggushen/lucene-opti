@@ -8,7 +8,7 @@ import java.util.List;
 
 public class NewPFDCodes extends AbstractIntRangeCodes {
 
-	static final double  exceptionThresholdRate = 0.3;
+	static final double  exceptionThresholdRate = 0.05;
 
 	static final double  exceptionRate = 0.05;
 
@@ -140,12 +140,12 @@ public class NewPFDCodes extends AbstractIntRangeCodes {
 		}
 
 		if( exception.length == 0 )
-			// 长度为0是代表灭有异常码
+			// 长度为0是代表没有异常码
 			return transformToFrame( bitFrame, 0, code, exception, null, lastFlag );
 
-		// loop2: create offset and upper-bit value list for patch .
 		int[] exceptionOffset	=	new int[ exception.length - 1 ];
 
+		//该处核心压缩逻辑，将异常位置右移异常位次，将其存到另外一个异常数组当中
 		int cur = miss[ 0 ];
 		exception[0] = code[cur] >> bitFrame ;
 		code[cur] = code[cur] & basicMask[bitFrame];
@@ -171,7 +171,7 @@ public class NewPFDCodes extends AbstractIntRangeCodes {
 
 
 	/**
-	 * exception and normal value is compressed to bit value.
+	 * 异常和正常值被压缩为位值。
 	 *
 	 * @param b
 	 * @param firstExceptionPos : miss[0]+1 or 0
@@ -180,7 +180,7 @@ public class NewPFDCodes extends AbstractIntRangeCodes {
 	 * @return
 	 */
 	private int[] transformToFrame( int b, int firstExceptionPos, int[] code, int[] exception, int[] exceptionOffset, boolean lastFlag ){
-
+		//头 + （数组长度 * 异常值长度 + 31） / 32  计算出异常值的int偏移量
 		int exceptionIntOffset = headerSize + ( code.length * b + 31 ) / 32;
 
 		if( firstExceptionPos == 0 ){
@@ -196,7 +196,7 @@ public class NewPFDCodes extends AbstractIntRangeCodes {
 		}
 
 
-		//make exception region
+		//计算异常范围
 		int exceptionOffsetNum = exceptionOffset.length;
 		int exceptionNum = exception.length;
 
@@ -298,10 +298,8 @@ public class NewPFDCodes extends AbstractIntRangeCodes {
 	 * 1bit : has next frame or not
 	 *
 	 * @param b
-	 * @param exceptionCode
 	 * @param firstExceptionPos
 	 * @param code
-	 * @param exception
 	 * @return
 	 */
 	private int makeHeader( int b, int firstExceptionPos, int[] code, int exceptionNum,
