@@ -245,7 +245,9 @@ for( int i = 0 ; i < data2.length ; i++ )
 
 
     @Test
-    public void deCompressPeformanceTest2() throws Exception {
+    public void deCompressPerformanceTest2() throws Exception {
+        boolean useGapList = false;
+        boolean useArraySort = false;
 
         String fileName = "word.txt";
         String encode = "UTF-8";
@@ -262,7 +264,7 @@ for( int i = 0 ; i < data2.length ; i++ )
 
         int dataNum = 0;
         List<int[]> encodedDatam = new ArrayList<int[]>();
-        boolean useGapList = true;
+
         while (br.ready()) {
 
             String line = br.readLine();
@@ -283,8 +285,8 @@ for( int i = 0 ; i < data2.length ; i++ )
             for (int i = 0; i < strIds.length; i++)
                 ids[i] = Integer.parseInt(strIds[i]);
 
-            boolean useArraySorte = true;
-            int[] encoded = code.encode(ids, useArraySorte, useGapList);
+
+            int[] encoded = code.encode(ids, useArraySort, useGapList);
             encodedDatam.add(encoded);
 
 //			if( encodedDatam.size() == 4325 )
@@ -299,19 +301,26 @@ for( int i = 0 ; i < data2.length ; i++ )
         long start = System.currentTimeMillis();
 
         for (int num = 0; num < 10; num++) {
-            for (int i = 0; i < encodedDatam.size(); i++)
-                code.decode(encodedDatam.get(i), true);
-
+            for (int i = 0; i < encodedDatam.size(); i++) {
+                int[] decode = code.decode(encodedDatam.get(i), useGapList);
+                System.out.print("第"+i + "个为：");
+                for (int j: decode) {
+                    System.out.print(j + ",");
+                }
+                System.out.println();
+            }
         }
         long end = System.currentTimeMillis();
         long diff = end - start;
         System.out.println("压缩：" + diff);
-
+        System.out.println("总数据量：" + encodedDatam.size());
         long start2 = System.currentTimeMillis();
 
         for (int num = 0; num < 10; num++) {
-            for (int i = 0; i < encodedDatam.size(); i++)
-                code.decode(encodedDatam.get(i), false);
+            for (int i = 0; i < encodedDatam.size(); i++){
+                int[] decode = code.decode(encodedDatam.get(i), useGapList);
+                System.out.println("第"+i + "个为："+decode);
+            }
 
         }
         long end2 = System.currentTimeMillis();

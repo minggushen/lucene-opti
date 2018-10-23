@@ -207,7 +207,7 @@ public class PForDeltaCodesTest {
 
 
     @Test
-    public void deCompressPeformanceTest2() throws Exception {
+    public void deCompressPerformanceTest2() throws Exception {
 
         String fileName = "word.txt";
         String encode = "UTF-8";
@@ -244,8 +244,8 @@ public class PForDeltaCodesTest {
             for (int i = 0; i < strIds.length; i++)
                 ids[i] = Integer.parseInt(strIds[i]);
 
-            boolean useArraySorte = true;
-            int[] encoded = code.encode(ids, useArraySorte, useGapList);
+            boolean useArraySort = false;
+            int[] encoded = code.encode(ids, useArraySort, useGapList);
             intCount += encoded.length;
             encodedDatam.add(encoded);
 

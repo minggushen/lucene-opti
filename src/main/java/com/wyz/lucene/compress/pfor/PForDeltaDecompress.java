@@ -1,6 +1,6 @@
 package com.wyz.lucene.compress.pfor;
 
-public class PForDecompress {
+public class PForDeltaDecompress {
 
 
 	static int fastDeCompressFor1Bit( int offSet, int[] encodedValue, int dataNum, int decodeOffset, int[] decode ){

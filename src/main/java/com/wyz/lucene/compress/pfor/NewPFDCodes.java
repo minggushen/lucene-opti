@@ -8,7 +8,7 @@ import java.util.List;
 
 public class NewPFDCodes extends AbstractIntRangeCodes {
 
-	static final double  exceptionThresholdRate = 0.1;
+	static final double  exceptionThresholdRate = 0.3;
 
 	static final double  exceptionRate = 0.05;
 
@@ -61,11 +61,12 @@ public class NewPFDCodes extends AbstractIntRangeCodes {
 	 */
 	@Override
 	protected int[] innerEncode( int[] numbers ){
-
+		//数组长额
 		int dataNum		=	numbers.length;
+		//需要多少个buffer去装，没128为一个buffer
 		int bufferBlock =	( dataNum + limitDataNum - 1 ) / limitDataNum;
 
-		Object[] frames = new Object[ bufferBlock ];
+		int[][] frames = new int[ bufferBlock ][];
 		for( int offset = 0, term = 0 ; term < bufferBlock ; offset += limitDataNum , term++ ){
 
 			int diff	=	dataNum - offset;
@@ -80,14 +81,14 @@ public class NewPFDCodes extends AbstractIntRangeCodes {
 			boolean lastFlag = false;
 			if(term == bufferBlock-1)
 				lastFlag = true;
-
+			//执行压缩方法
 			int[] frameData	= compress( length, b, offset, numbers, exceptionList, lastFlag );
 
 			frames[term] = frameData;
 
 		}
-		return toBitFrame( dataNum, frames );
 
+		return toBitFrame( dataNum, frames );
 	}
 
 
@@ -117,7 +118,6 @@ public class NewPFDCodes extends AbstractIntRangeCodes {
 	  * @param length
 	  * @param bitFrame
 	  * @param offset	// offset for dataNum
-	  * @param exceptionCode
 	  * @param numbers
 	  * @param exception
 	  * @param lastFlag
@@ -130,7 +130,7 @@ public class NewPFDCodes extends AbstractIntRangeCodes {
 		int[] code	=  new int[length];
 		int[] miss	=  new int[length];
 
-		// loop1: find exception
+		// loop1: 找到异常码
 		int j = 0;
 		for( int i = 0 ; i < length ; i++ ){
 			int val = numbers[ i + offset ];
@@ -140,7 +140,7 @@ public class NewPFDCodes extends AbstractIntRangeCodes {
 		}
 
 		if( exception.length == 0 )
-			// firstExceptionPos = 0 represent no exception
+			// 长度为0是代表灭有异常码
 			return transformToFrame( bitFrame, 0, code, exception, null, lastFlag );
 
 		// loop2: create offset and upper-bit value list for patch .
@@ -235,8 +235,7 @@ public class NewPFDCodes extends AbstractIntRangeCodes {
 	 * encode exception values
 	 *
 	 * @param exceptionIntOffset : ( header + compressed code ) int-length
-	 * @param compressedExceptionOffsets
-	 * @param compressedExceptionValues
+	 * @param compressedExceptionDatum
 	 * @param frame
 	 */
 	private void encodeExceptionValues( int exceptionIntOffset, int[] compressedExceptionDatum, int[] frame ){
@@ -320,12 +319,11 @@ public class NewPFDCodes extends AbstractIntRangeCodes {
 
 
 	/**
-	 * calculate optimized bit number of frame
-	 * it is estimated by prediction of 10% exception
+	 * 计算最有比特数，按照10%异常值的预测估计
 	 *
 	 * @param numbers
 	 * @param offset
-	 * @param length : data length of this "For"
+	 * @param length : 数据长度
 	 * @return 2 value int
 	 * 			( bitFrame, exceptionNum )
 	 */
@@ -337,31 +335,38 @@ public class NewPFDCodes extends AbstractIntRangeCodes {
 
 		int maxValue	=	copy[ length - 1 ];
 		if ( maxValue <= 1 ) return new int[]{ 1, 0 }; // bitFrame, exceptionNum, exceptionCode :
+		//最大的一定是异常码，8位一个字节，判断是几个字节0-2^8=0 2^8-2^16=1 >2^16=2
 		int exceptionCode = ( maxValue < ( 1 << 8 ) ) ? 0 : (maxValue < (1 << 16 )) ? 1 : 2;
+		//异常码占用的字节数
 		int bytesPerException = 1 << exceptionCode;
 		int frameBits	=	1;
+		//计算所需字节数
 		int bytesForFrame = (length * frameBits + 7 ) / 8; // cut up byte
 
-		// initially assume all inputs are exceptions.
+		// 首先假设所有的数据都是异常值
 		int totalBytes		=	bytesForFrame + length * bytesPerException; // excluding the header.
 		int bestBytes		=	totalBytes;
 		int bestFrameBits	=	frameBits;
 		int bestExceptions	=	length;
 
 		for (int i = 0; i < length; i++) {
-			// determine frameBits so that copy[i] is no more exception
+			// 确定比特数，copy[i]就不再是异常数字了,frameBits为该copy[i]的占用比特数
 			while ( copy[i] >= (1 << frameBits) ) {
-				if ( frameBits == 30 ) { // no point to increase further.
+				//如果异常值大于30比特了，那么以后的循环也无需进行了
+				//总长度减去之前小于30比特不异常的就是总异常值
+				if ( frameBits == 30 ) {
 					return rebuild( copy, bestFrameBits,  length - i - 1 );
 				}
+				//一共需要的比特数，每循环一次证明总长度需要增加1
+				// 由于是从小到大排序的，所以下次的肯定大于前一次，故无需从1循环
 				++frameBits;
-				// increase bytesForFrame and totalBytes to correspond to frameBits
+				// 使用新的字节数进行赋值
 				int newBytesForFrame = (length * frameBits + 7 ) / 8;
 				totalBytes += newBytesForFrame - bytesForFrame;
 				bytesForFrame = newBytesForFrame;
 			}
-			totalBytes -= bytesPerException; // no more need to store copy[i] as exception
-			if ( totalBytes <= bestBytes ) { // <= : prefer fewer exceptions at higher number of frame bits.
+			totalBytes -= bytesPerException; // 处理完一个值就在总数据中减去定义的异常值
+			if ( totalBytes <= bestBytes ) { // <= : 当比特高的时候期望一个更少的异常值
 				bestBytes		=	totalBytes;
 				bestFrameBits	=	frameBits;
 				bestExceptions	=	length - i - 1;
@@ -444,38 +449,38 @@ public class NewPFDCodes extends AbstractIntRangeCodes {
 
 		int intOffsetForExceptionRange;
 		switch( numFrameBit ){
-			case 1  : intOffsetForExceptionRange = PForDecompress.fastDeCompressFor1Bit ( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
-			case 2  : intOffsetForExceptionRange = PForDecompress.fastDeCompressFor2Bit ( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
-			case 3  : intOffsetForExceptionRange = PForDecompress.fastDeCompressFor3Bit ( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
-			case 4  : intOffsetForExceptionRange = PForDecompress.fastDeCompressFor4Bit ( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
-			case 5  : intOffsetForExceptionRange = PForDecompress.fastDeCompressFor5Bit ( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
-			case 6  : intOffsetForExceptionRange = PForDecompress.fastDeCompressFor6Bit ( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
-			case 7  : intOffsetForExceptionRange = PForDecompress.fastDeCompressFor7Bit ( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
-			case 8  : intOffsetForExceptionRange = PForDecompress.fastDeCompressFor8Bit ( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
-			case 9  : intOffsetForExceptionRange = PForDecompress.fastDeCompressFor9Bit ( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
-			case 10 : intOffsetForExceptionRange = PForDecompress.fastDeCompressFor10Bit( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
-			case 11 : intOffsetForExceptionRange = PForDecompress.fastDeCompressFor11Bit( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
-			case 12 : intOffsetForExceptionRange = PForDecompress.fastDeCompressFor12Bit( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
-			case 13 : intOffsetForExceptionRange = PForDecompress.fastDeCompressFor13Bit( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
-			case 14 : intOffsetForExceptionRange = PForDecompress.fastDeCompressFor14Bit( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
-			case 15 : intOffsetForExceptionRange = PForDecompress.fastDeCompressFor15Bit( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
-			case 16 : intOffsetForExceptionRange = PForDecompress.fastDeCompressFor16Bit( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
-			case 17 : intOffsetForExceptionRange = PForDecompress.fastDeCompressFor17Bit( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
-			case 18 : intOffsetForExceptionRange = PForDecompress.fastDeCompressFor18Bit( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
-			case 19 : intOffsetForExceptionRange = PForDecompress.fastDeCompressFor19Bit( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
-			case 20 : intOffsetForExceptionRange = PForDecompress.fastDeCompressFor20Bit( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
-			case 21 : intOffsetForExceptionRange = PForDecompress.fastDeCompressFor21Bit( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
-			case 22 : intOffsetForExceptionRange = PForDecompress.fastDeCompressFor22Bit( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
-			case 23 : intOffsetForExceptionRange = PForDecompress.fastDeCompressFor23Bit( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
-			case 24 : intOffsetForExceptionRange = PForDecompress.fastDeCompressFor24Bit( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
-			case 25 : intOffsetForExceptionRange = PForDecompress.fastDeCompressFor25Bit( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
-			case 26 : intOffsetForExceptionRange = PForDecompress.fastDeCompressFor26Bit( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
-			case 27 : intOffsetForExceptionRange = PForDecompress.fastDeCompressFor27Bit( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
-			case 28 : intOffsetForExceptionRange = PForDecompress.fastDeCompressFor28Bit( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
-			case 29 : intOffsetForExceptionRange = PForDecompress.fastDeCompressFor29Bit( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
-			case 30 : intOffsetForExceptionRange = PForDecompress.fastDeCompressFor30Bit( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
-			case 31 : intOffsetForExceptionRange = PForDecompress.fastDeCompressFor31Bit( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
-			case 32 : intOffsetForExceptionRange = PForDecompress.fastDeCompressFor32Bit( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
+			case 1  : intOffsetForExceptionRange = PForDeltaDecompress.fastDeCompressFor1Bit ( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
+			case 2  : intOffsetForExceptionRange = PForDeltaDecompress.fastDeCompressFor2Bit ( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
+			case 3  : intOffsetForExceptionRange = PForDeltaDecompress.fastDeCompressFor3Bit ( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
+			case 4  : intOffsetForExceptionRange = PForDeltaDecompress.fastDeCompressFor4Bit ( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
+			case 5  : intOffsetForExceptionRange = PForDeltaDecompress.fastDeCompressFor5Bit ( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
+			case 6  : intOffsetForExceptionRange = PForDeltaDecompress.fastDeCompressFor6Bit ( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
+			case 7  : intOffsetForExceptionRange = PForDeltaDecompress.fastDeCompressFor7Bit ( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
+			case 8  : intOffsetForExceptionRange = PForDeltaDecompress.fastDeCompressFor8Bit ( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
+			case 9  : intOffsetForExceptionRange = PForDeltaDecompress.fastDeCompressFor9Bit ( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
+			case 10 : intOffsetForExceptionRange = PForDeltaDecompress.fastDeCompressFor10Bit( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
+			case 11 : intOffsetForExceptionRange = PForDeltaDecompress.fastDeCompressFor11Bit( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
+			case 12 : intOffsetForExceptionRange = PForDeltaDecompress.fastDeCompressFor12Bit( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
+			case 13 : intOffsetForExceptionRange = PForDeltaDecompress.fastDeCompressFor13Bit( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
+			case 14 : intOffsetForExceptionRange = PForDeltaDecompress.fastDeCompressFor14Bit( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
+			case 15 : intOffsetForExceptionRange = PForDeltaDecompress.fastDeCompressFor15Bit( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
+			case 16 : intOffsetForExceptionRange = PForDeltaDecompress.fastDeCompressFor16Bit( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
+			case 17 : intOffsetForExceptionRange = PForDeltaDecompress.fastDeCompressFor17Bit( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
+			case 18 : intOffsetForExceptionRange = PForDeltaDecompress.fastDeCompressFor18Bit( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
+			case 19 : intOffsetForExceptionRange = PForDeltaDecompress.fastDeCompressFor19Bit( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
+			case 20 : intOffsetForExceptionRange = PForDeltaDecompress.fastDeCompressFor20Bit( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
+			case 21 : intOffsetForExceptionRange = PForDeltaDecompress.fastDeCompressFor21Bit( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
+			case 22 : intOffsetForExceptionRange = PForDeltaDecompress.fastDeCompressFor22Bit( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
+			case 23 : intOffsetForExceptionRange = PForDeltaDecompress.fastDeCompressFor23Bit( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
+			case 24 : intOffsetForExceptionRange = PForDeltaDecompress.fastDeCompressFor24Bit( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
+			case 25 : intOffsetForExceptionRange = PForDeltaDecompress.fastDeCompressFor25Bit( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
+			case 26 : intOffsetForExceptionRange = PForDeltaDecompress.fastDeCompressFor26Bit( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
+			case 27 : intOffsetForExceptionRange = PForDeltaDecompress.fastDeCompressFor27Bit( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
+			case 28 : intOffsetForExceptionRange = PForDeltaDecompress.fastDeCompressFor28Bit( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
+			case 29 : intOffsetForExceptionRange = PForDeltaDecompress.fastDeCompressFor29Bit( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
+			case 30 : intOffsetForExceptionRange = PForDeltaDecompress.fastDeCompressFor30Bit( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
+			case 31 : intOffsetForExceptionRange = PForDeltaDecompress.fastDeCompressFor31Bit( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
+			case 32 : intOffsetForExceptionRange = PForDeltaDecompress.fastDeCompressFor32Bit( encodeOffset, encodedValue, dataNum, decodeOffset, decode ); break;
 			default : throw new RuntimeException("numFramBit is too high ! " + numFrameBit);
 		}
 
