@@ -9,7 +9,7 @@ import org.apache.lucene.store.BufferedIndexInput;
  * 采用二分查找法进行优化
  */
 
-final class MyBinarySearchReader {
+public class MyBinarySearchReader {
     private Directory directory;
     private String segment;
     private FieldInfos fieldInfos;
@@ -84,8 +84,8 @@ final class MyBinarySearchReader {
         totalIndexInterval = origEnum.indexInterval * indexDivisor;
     }
 
-    /** Returns the indexDivisor.
-     * @see #setIndexDivisor
+    /**
+     * 返回索引因子
      */
     public int getIndexDivisor() {
         return indexDivisor;
@@ -99,7 +99,7 @@ final class MyBinarySearchReader {
         enumerators.set(null);
     }
 
-    /** Returns the number of term/value pairs in the set. */
+
     final long size() {
         return size;
     }
@@ -138,9 +138,10 @@ final class MyBinarySearchReader {
         }
     }
 
-    /** Returns the offset of the greatest index entry which is less than or equal to term.*/
+    /** 返回索引的偏移量*/
     private final int getIndexOffset(Term term) {
-        int lo = 0;					  // binary search indexTerms[]
+        // 二分法搜索 indexTerms[]
+        int lo = 0;
         int hi = indexTerms.length - 1;
 
         while (hi >= lo) {

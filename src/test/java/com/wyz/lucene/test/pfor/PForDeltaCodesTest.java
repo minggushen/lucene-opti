@@ -217,7 +217,7 @@ public class PForDeltaCodesTest {
         int dataCount = 0;
         List<int[]> encodedDatam = new ArrayList<int[]>();
 
-        boolean useGapList = true;
+
         FileInputStream is = new FileInputStream(new File(fileName));
         BufferedReader br = new BufferedReader(
                 new InputStreamReader(is, encode));
@@ -245,6 +245,7 @@ public class PForDeltaCodesTest {
                 ids[i] = Integer.parseInt(strIds[i]);
 
             boolean useArraySort = false;
+            boolean useGapList = false;
             int[] encoded = code.encode(ids, useArraySort, useGapList);
             intCount += encoded.length;
             encodedDatam.add(encoded);
@@ -259,11 +260,12 @@ public class PForDeltaCodesTest {
 
             long start = System.currentTimeMillis();
 
-            for (int num = 0; num < 10; num++) {
-                for (; i < encodedDatam.size(); i++)
-                    code.decode(encodedDatam.get(i), false);
-                i = 0;
+            for (; i < encodedDatam.size(); i++) {
+                int[] decode = code.decode(encodedDatam.get(i), false);
+                System.out.println(decode);
             }
+
+
             long end = System.currentTimeMillis();
             long diff = end - start;
             System.out.println(diff);

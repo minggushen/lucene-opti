@@ -8,9 +8,9 @@ import java.util.List;
 
 public class NewPFDCodes extends AbstractIntRangeCodes {
 
-	static final double  exceptionThresholdRate = 0.05;
+	static final double  exceptionThresholdRate = 0.30;
 
-	static final double  exceptionRate = 0.05;
+	static final double  exceptionRate = 0.3;
 
 	private static final int limitDataNum = 128;
 

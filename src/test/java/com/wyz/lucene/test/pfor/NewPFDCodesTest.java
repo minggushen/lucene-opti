@@ -300,32 +300,31 @@ for( int i = 0 ; i < data2.length ; i++ )
 
         long start = System.currentTimeMillis();
 
-        for (int num = 0; num < 10; num++) {
-            for (int i = 0; i < encodedDatam.size(); i++) {
-                int[] decode = code.decode(encodedDatam.get(i), useGapList);
-                System.out.print("第"+i + "个为：");
-                for (int j: decode) {
-                    System.out.print(j + ",");
-                }
-                System.out.println();
+        for (int i = 0; i < encodedDatam.size(); i++) {
+            int[] decode = code.decode(encodedDatam.get(i), useGapList);
+
+            System.out.print("第"+i + "个为：");
+            for (int j: decode) {
+                System.out.print(j + ",");
             }
+            System.out.println();
         }
         long end = System.currentTimeMillis();
         long diff = end - start;
         System.out.println("压缩：" + diff);
         System.out.println("总数据量：" + encodedDatam.size());
-        long start2 = System.currentTimeMillis();
+//        long start2 = System.currentTimeMillis();
 
-        for (int num = 0; num < 10; num++) {
-            for (int i = 0; i < encodedDatam.size(); i++){
-                int[] decode = code.decode(encodedDatam.get(i), useGapList);
-                System.out.println("第"+i + "个为："+decode);
-            }
-
-        }
-        long end2 = System.currentTimeMillis();
-        long diff2 = end2 - start2;
-        System.out.println("解压" + diff2);
+//        for (int num = 0; num < 10; num++) {
+//            for (int i = 0; i < encodedDatam.size(); i++){
+//                int[] decode = code.decode(encodedDatam.get(i), useGapList);
+//                System.out.println("第"+i + "个为："+decode);
+//            }
+//
+//        }
+//        long end2 = System.currentTimeMillis();
+//        long diff2 = end2 - start2;
+//        System.out.println("解压" + diff2);
 
     }
 
