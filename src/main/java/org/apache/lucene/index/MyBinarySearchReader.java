@@ -72,7 +72,6 @@ public class MyBinarySearchReader {
      * @param indexDivisor
      * @throws IllegalStateException
      */
-
     public void setIndexDivisor(int indexDivisor) throws IllegalStateException {
         if (indexDivisor < 1)
             throw new IllegalArgumentException("indexDivisor must be > 0: got " + indexDivisor);
@@ -113,11 +112,15 @@ public class MyBinarySearchReader {
         return termEnum;
     }
 
+    /**
+     * 加载默认缓存的
+     * @throws IOException
+     */
     private synchronized void ensureIndexIsRead() throws IOException {
-        if (indexTerms != null)                                    // index already read
-            return;                                                  // do nothing
+        if (indexTerms != null)                                         // 已经读了
+            return;                                                     //什么也不做
         try {
-            int indexSize = 1+((int)indexEnum.size-1)/indexDivisor;  // otherwise read index
+            int indexSize = 1+((int)indexEnum.size-1)/indexDivisor;     // 否则进行index读取
 
             indexTerms = new Term[indexSize];
             indexInfos = new TermInfo[indexSize];
@@ -259,10 +262,10 @@ public class MyBinarySearchReader {
     public SegmentTermEnum terms() {
         return (SegmentTermEnum)origEnum.clone();
     }
+
     /**
      * 返回指定的期数或开始的段集合
      */
-    /** Returns an enumeration of terms starting at or after the named term. */
     public SegmentTermEnum terms(Term term) throws IOException {
         get(term);
         return (SegmentTermEnum)getEnum().clone();
