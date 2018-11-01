@@ -1,7 +1,6 @@
 package com.wyz.lucene.service.impl;
 
 import com.wyz.lucene.service.FileService;
-import org.apache.lucene.index.MyBinarySearchReader;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
