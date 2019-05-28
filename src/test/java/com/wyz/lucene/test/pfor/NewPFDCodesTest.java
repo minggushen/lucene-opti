@@ -246,8 +246,8 @@ for( int i = 0 ; i < data2.length ; i++ )
 
     @Test
     public void deCompressPerformanceTest2() throws Exception {
-        boolean useGapList = false;
-        boolean useArraySort = false;
+        boolean useGapList = true;
+        boolean useArraySort = true;
 
         String fileName = "word.txt";
         String encode = "UTF-8";
@@ -288,9 +288,6 @@ for( int i = 0 ; i < data2.length ; i++ )
 
             int[] encoded = code.encode(ids, useArraySort, useGapList);
             encodedDatam.add(encoded);
-
-//			if( encodedDatam.size() == 4325 )
-//				System.out.println( "line 4324 : " + line );
 
         }
         br.close();
