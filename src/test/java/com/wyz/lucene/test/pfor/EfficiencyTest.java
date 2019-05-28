@@ -11,7 +11,7 @@ public class EfficiencyTest {
         TimeUnit.MILLISECONDS.sleep(10087);
         long alreadyReadJump = System.currentTimeMillis();
         System.out.println("跳跃表读取耗时:" + (alreadyReadJump - startMills) + "ms");
-        System.out.println("开始进行二分法读取，当前10的热点数据预加载...");
+        System.out.println("开始进行二分法读取，当前12.5%的热点数据预加载...");
         TimeUnit.MILLISECONDS.sleep(1850);
         long alreadyBinary = System.currentTimeMillis();
         System.out.println("二分法读取耗时:" + (alreadyBinary - alreadyReadJump) + "ms");
