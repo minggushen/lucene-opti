@@ -15,7 +15,7 @@
 
 
     <properties>
-        <lucene.version>2.3.2</lucene.version>
+        <lucene.version>8.2.0</lucene.version>
     </properties>
     <dependencies>
         <!-- 这里，是另一种依赖 spring boot方式 -->
