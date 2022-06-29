@@ -65,7 +65,7 @@
         <dependency>
             <groupId>org.apache.poi</groupId>
             <artifactId>poi</artifactId>
-            <version>3.8</version>
+            <version>4.1.1</version>
         </dependency>
         <!-- 为POI支持Office Open XML -->
         <dependency>
